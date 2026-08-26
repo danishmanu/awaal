@@ -655,7 +655,21 @@
 								<select class="form-select add-patient-test-name test-name-select" autocomplete="off" id="field_1049" name="name_1050">
 									<option value="">-- Select Test --</option>
 									@foreach($labTests as $test)
-										<option value="{{ $test->name }}" data-id="{{ $test->id }}" data-price="{{ $test->price }}">{{ $test->name }}</option>
+										@php $p = $test->parameter; @endphp
+										<option value="{{ $test->name }}" 
+												data-id="{{ $test->id }}" 
+												data-price="{{ $test->price }}"
+												data-unit="{{ $p->unit ?? '' }}"
+												data-is-immuno="{{ $p->is_immunoassay ?? '0' }}"
+												data-critical-low="{{ $p->critical_low ?? '' }}"
+												data-critical-high="{{ $p->critical_high ?? '' }}"
+												data-male-ref="{{ $p->male_reference ?? '' }}"
+												data-male-min="{{ $p->male_min ?? '' }}"
+												data-male-max="{{ $p->male_max ?? '' }}"
+												data-female-ref="{{ $p->female_reference ?? '' }}"
+												data-female-min="{{ $p->female_min ?? '' }}"
+												data-female-max="{{ $p->female_max ?? '' }}"
+												data-bio-ref="{{ $p->biological_reference ?? '' }}">{{ $test->name }}</option>
 									@endforeach
 									<option value="__custom__">Custom (type below)</option>
 								</select>
@@ -1001,29 +1015,135 @@
 
   <!-- Add Test Modal -->
   <div class="modal fade modal-aw" id="modal-add-test" tabindex="-1" style="z-index: 1060;" aria-hidden="true">
-	  <div class="modal-dialog modal-dialog-centered">
+	  <div class="modal-dialog modal-dialog-centered modal-lg">
 		<div class="modal-content">
 		  <div class="modal-header">
-			<h5 class="modal-title"><i class="fa fa-flask me-2"></i>Add New Test</h5>
+			<h5 class="modal-title"><i class="fa fa-flask me-2"></i>Add New Test &amp; Clinical Parameters</h5>
 			<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 		  </div>
 		  <div class="modal-body">
 			<form id="form-add-test">
                 @csrf
-				<div class="form-group">
-					<label for="field_1001" class="form-label-aw">Test Name <span class="text-danger">*</span></label>
-					<input type="text" class="form-control-aw" name="name" required placeholder="e.g. CBC" autocomplete="off" id="field_1001">
-				</div>
-				<div class="form-group mt-3">
-					<label for="field_1002" class="form-label-aw">Price</label>
-					<input type="number" step="0.01" class="form-control-aw" name="price" placeholder="e.g. 500" autocomplete="off" id="field_1002">
+				<div class="row mb-3">
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="field_1001" class="form-label-aw">Test Name <span class="text-danger">*</span></label>
+							<input type="text" class="form-control-aw" name="name" required placeholder="e.g. Blood Sugar / CBC" autocomplete="off" id="field_1001">
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="field_1002" class="form-label-aw">Price (₹)</label>
+							<input type="number" step="0.01" class="form-control-aw" name="price" placeholder="e.g. 500" autocomplete="off" id="field_1002">
+						</div>
+					</div>
 				</div>
 
+				<div class="mt-3 pt-2 border-top">
+					<h6 class="fw-bold text-primary mb-3" style="font-size:13px;"><i class="fa fa-sliders me-1"></i> Clinical Setup &amp; Parameters (Optional)</h6>
+					
+					<div class="row mb-3">
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="add-test-unit" class="form-label-aw">Measurement Unit</label>
+								<select class="form-select" name="unit" id="add-test-unit" autocomplete="off">
+									<option value="">-- Select Unit --</option>
+									@if(isset($units))
+										@foreach($units as $u)
+											<option value="{{ $u->name }}">{{ $u->name }}</option>
+										@endforeach
+									@endif
+								</select>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="add-test-is-immuno" class="form-label-aw">Calculation Logic</label>
+								<select class="form-select" name="is_immunoassay" id="add-test-is-immuno" autocomplete="off">
+									<option value="0">Standard (Min-Max Flagging)</option>
+									<option value="1">Immunoassay (Neg/Bord/Pos Flagging)</option>
+								</select>
+							</div>
+						</div>
+					</div>
+
+					<div class="row mb-3">
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="add-test-critical-low" class="form-label-aw">Critical Low</label>
+								<input type="number" step="0.01" class="form-control-aw" name="critical_low" id="add-test-critical-low" placeholder="e.g. 50" autocomplete="off">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="add-test-critical-high" class="form-label-aw">Critical High</label>
+								<input type="number" step="0.01" class="form-control-aw" name="critical_high" id="add-test-critical-high" placeholder="e.g. 200" autocomplete="off">
+							</div>
+						</div>
+					</div>
+
+					<h6 class="text-secondary border-bottom pb-2 mt-3 mb-3" style="font-size:12px;"><i class="fa fa-flask me-1"></i> Reference Intervals (Biological)</h6>
+
+					<div class="row g-3">
+						<!-- Male Parameters -->
+						<div class="col-md-4">
+							<div class="card border-0 shadow-sm p-2" style="background:#f8fafc; border-radius:10px; border-top: 3px solid var(--primary) !important;">
+								<div class="fw-bold mb-2" style="color:var(--primary); font-size:12px;"><i class="fa fa-mars me-1"></i> Male Parameters</div>
+								<div class="form-group mb-2">
+									<label for="add-test-male-ref" class="form-label-aw" style="font-size:10px;">Reference Text</label>
+									<textarea rows="2" class="form-control-aw" name="male_reference" id="add-test-male-ref" placeholder="e.g. 13.5 - 17.5 g/dL" autocomplete="off" style="font-size:12px;"></textarea>
+								</div>
+								<div class="row g-1">
+									<div class="col-6">
+										<label for="add-test-male-min" class="form-label-aw" style="font-size:9px;">Min</label>
+										<input type="number" step="0.01" class="form-control-aw" name="male_min" id="add-test-male-min" placeholder="Min" autocomplete="off" style="font-size:12px;">
+									</div>
+									<div class="col-6">
+										<label for="add-test-male-max" class="form-label-aw" style="font-size:9px;">Max</label>
+										<input type="number" step="0.01" class="form-control-aw" name="male_max" id="add-test-male-max" placeholder="Max" autocomplete="off" style="font-size:12px;">
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Female Parameters -->
+						<div class="col-md-4">
+							<div class="card border-0 shadow-sm p-2" style="background:#f8fafc; border-radius:10px; border-top: 3px solid #06b6d4 !important;">
+								<div class="fw-bold mb-2" style="color:#06b6d4; font-size:12px;"><i class="fa fa-venus me-1"></i> Female Parameters</div>
+								<div class="form-group mb-2">
+									<label for="add-test-female-ref" class="form-label-aw" style="font-size:10px;">Reference Text</label>
+									<textarea rows="2" class="form-control-aw" name="female_reference" id="add-test-female-ref" placeholder="e.g. 12.0 - 15.5 g/dL" autocomplete="off" style="font-size:12px;"></textarea>
+								</div>
+								<div class="row g-1">
+									<div class="col-6">
+										<label for="add-test-female-min" class="form-label-aw" style="font-size:9px;">Min</label>
+										<input type="number" step="0.01" class="form-control-aw" name="female_min" id="add-test-female-min" placeholder="Min" autocomplete="off" style="font-size:12px;">
+									</div>
+									<div class="col-6">
+										<label for="add-test-female-max" class="form-label-aw" style="font-size:9px;">Max</label>
+										<input type="number" step="0.01" class="form-control-aw" name="female_max" id="add-test-female-max" placeholder="Max" autocomplete="off" style="font-size:12px;">
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- General Bio-Ref -->
+						<div class="col-md-4">
+							<div class="card border-0 shadow-sm p-2" style="background:#f8fafc; border-radius:10px; border-top: 3px solid #10b981 !important;">
+								<div class="fw-bold mb-2" style="color:#10b981; font-size:12px;"><i class="fa fa-universal-access me-1"></i> Common Bio Ref</div>
+								<div class="form-group mb-0">
+									<label for="add-test-bio-ref" class="form-label-aw" style="font-size:10px;">Common Reference Range</label>
+									<textarea rows="4" class="form-control-aw" name="biological_reference" id="add-test-bio-ref" placeholder="Common biological reference interval..." autocomplete="off" style="font-size:12px;"></textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</form>
 		  </div>
 		  <div class="modal-footer">
 			<button type="button" class="btn-aw-outline" data-bs-dismiss="modal">Close</button>
-			<button type="button" class="btn-aw-primary" id="btn-save-test"><i class="fa fa-check"></i> Save Test</button>
+			<button type="button" class="btn-aw-primary" id="btn-save-test"><i class="fa fa-check"></i> Save Test &amp; Parameters</button>
 		  </div>
 		</div>
 	  </div>
@@ -1031,25 +1151,131 @@
 
   <!-- Edit Test Modal -->
   <div class="modal fade modal-aw" id="modal-edit-test" tabindex="-1" style="z-index: 1060;" aria-hidden="true">
-	  <div class="modal-dialog modal-dialog-centered">
+	  <div class="modal-dialog modal-dialog-centered modal-lg">
 		<div class="modal-content">
 		  <div class="modal-header">
-			<h5 class="modal-title"><i class="fa fa-flask me-2"></i>Edit Test</h5>
+			<h5 class="modal-title"><i class="fa fa-flask me-2"></i>Edit Test &amp; Parameters</h5>
 			<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 		  </div>
 		  <div class="modal-body">
 			<form id="form-edit-test">
                 @csrf
 				<input type="hidden" name="test_id" id="edit-test-id">
-				<div class="form-group">
-					<label for="edit-test-name" class="form-label-aw">Test Name <span class="text-danger">*</span></label>
-					<input type="text" class="form-control-aw" name="name" id="edit-test-name" required autocomplete="off">
-				</div>
-				<div class="form-group mt-3">
-					<label for="edit-test-price" class="form-label-aw">Price</label>
-					<input type="number" step="0.01" class="form-control-aw" name="price" id="edit-test-price" autocomplete="off">
+				<div class="row mb-3">
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="edit-test-name" class="form-label-aw">Test Name <span class="text-danger">*</span></label>
+							<input type="text" class="form-control-aw" name="name" id="edit-test-name" required autocomplete="off">
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="form-group">
+							<label for="edit-test-price" class="form-label-aw">Price (₹)</label>
+							<input type="number" step="0.01" class="form-control-aw" name="price" id="edit-test-price" autocomplete="off">
+						</div>
+					</div>
 				</div>
 
+				<div class="mt-3 pt-2 border-top">
+					<h6 class="fw-bold text-primary mb-3" style="font-size:13px;"><i class="fa fa-sliders me-1"></i> Clinical Setup &amp; Parameters</h6>
+					
+					<div class="row mb-3">
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="edit-test-unit" class="form-label-aw">Measurement Unit</label>
+								<select class="form-select" name="unit" id="edit-test-unit" autocomplete="off">
+									<option value="">-- Select Unit --</option>
+									@if(isset($units))
+										@foreach($units as $u)
+											<option value="{{ $u->name }}">{{ $u->name }}</option>
+										@endforeach
+									@endif
+								</select>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="edit-test-is-immuno" class="form-label-aw">Calculation Logic</label>
+								<select class="form-select" name="is_immunoassay" id="edit-test-is-immuno" autocomplete="off">
+									<option value="0">Standard (Min-Max Flagging)</option>
+									<option value="1">Immunoassay (Neg/Bord/Pos Flagging)</option>
+								</select>
+							</div>
+						</div>
+					</div>
+
+					<div class="row mb-3">
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="edit-test-critical-low" class="form-label-aw">Critical Low</label>
+								<input type="number" step="0.01" class="form-control-aw" name="critical_low" id="edit-test-critical-low" autocomplete="off">
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="form-group">
+								<label for="edit-test-critical-high" class="form-label-aw">Critical High</label>
+								<input type="number" step="0.01" class="form-control-aw" name="critical_high" id="edit-test-critical-high" autocomplete="off">
+							</div>
+						</div>
+					</div>
+
+					<h6 class="text-secondary border-bottom pb-2 mt-3 mb-3" style="font-size:12px;"><i class="fa fa-flask me-1"></i> Reference Intervals (Biological)</h6>
+
+					<div class="row g-3">
+						<!-- Male Parameters -->
+						<div class="col-md-4">
+							<div class="card border-0 shadow-sm p-2" style="background:#f8fafc; border-radius:10px; border-top: 3px solid var(--primary) !important;">
+								<div class="fw-bold mb-2" style="color:var(--primary); font-size:12px;"><i class="fa fa-mars me-1"></i> Male Parameters</div>
+								<div class="form-group mb-2">
+									<label for="edit-test-male-ref" class="form-label-aw" style="font-size:10px;">Reference Text</label>
+									<textarea rows="2" class="form-control-aw" name="male_reference" id="edit-test-male-ref" autocomplete="off" style="font-size:12px;"></textarea>
+								</div>
+								<div class="row g-1">
+									<div class="col-6">
+										<label for="edit-test-male-min" class="form-label-aw" style="font-size:9px;">Min</label>
+										<input type="number" step="0.01" class="form-control-aw" name="male_min" id="edit-test-male-min" autocomplete="off" style="font-size:12px;">
+									</div>
+									<div class="col-6">
+										<label for="edit-test-male-max" class="form-label-aw" style="font-size:9px;">Max</label>
+										<input type="number" step="0.01" class="form-control-aw" name="male_max" id="edit-test-male-max" autocomplete="off" style="font-size:12px;">
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Female Parameters -->
+						<div class="col-md-4">
+							<div class="card border-0 shadow-sm p-2" style="background:#f8fafc; border-radius:10px; border-top: 3px solid #06b6d4 !important;">
+								<div class="fw-bold mb-2" style="color:#06b6d4; font-size:12px;"><i class="fa fa-venus me-1"></i> Female Parameters</div>
+								<div class="form-group mb-2">
+									<label for="edit-test-female-ref" class="form-label-aw" style="font-size:10px;">Reference Text</label>
+									<textarea rows="2" class="form-control-aw" name="female_reference" id="edit-test-female-ref" autocomplete="off" style="font-size:12px;"></textarea>
+								</div>
+								<div class="row g-1">
+									<div class="col-6">
+										<label for="edit-test-female-min" class="form-label-aw" style="font-size:9px;">Min</label>
+										<input type="number" step="0.01" class="form-control-aw" name="female_min" id="edit-test-female-min" autocomplete="off" style="font-size:12px;">
+									</div>
+									<div class="col-6">
+										<label for="edit-test-female-max" class="form-label-aw" style="font-size:9px;">Max</label>
+										<input type="number" step="0.01" class="form-control-aw" name="female_max" id="edit-test-female-max" autocomplete="off" style="font-size:12px;">
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- General Bio-Ref -->
+						<div class="col-md-4">
+							<div class="card border-0 shadow-sm p-2" style="background:#f8fafc; border-radius:10px; border-top: 3px solid #10b981 !important;">
+								<div class="fw-bold mb-2" style="color:#10b981; font-size:12px;"><i class="fa fa-universal-access me-1"></i> Common Bio Ref</div>
+								<div class="form-group mb-0">
+									<label for="edit-test-bio-ref" class="form-label-aw" style="font-size:10px;">Common Reference Range</label>
+									<textarea rows="4" class="form-control-aw" name="biological_reference" id="edit-test-bio-ref" autocomplete="off" style="font-size:12px;"></textarea>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</form>
 		  </div>
 		  <div class="modal-footer">
@@ -1880,6 +2106,17 @@
               $('#edit-test-id').val(testId);
               $('#edit-test-name').val(selectedOption.val());
               $('#edit-test-price').val(selectedOption.attr('data-price'));
+              $('#edit-test-unit').val(selectedOption.attr('data-unit') || '');
+              $('#edit-test-is-immuno').val(selectedOption.attr('data-is-immuno') || '0');
+              $('#edit-test-critical-low').val(selectedOption.attr('data-critical-low') || '');
+              $('#edit-test-critical-high').val(selectedOption.attr('data-critical-high') || '');
+              $('#edit-test-male-ref').val(selectedOption.attr('data-male-ref') || '');
+              $('#edit-test-male-min').val(selectedOption.attr('data-male-min') || '');
+              $('#edit-test-male-max').val(selectedOption.attr('data-male-max') || '');
+              $('#edit-test-female-ref').val(selectedOption.attr('data-female-ref') || '');
+              $('#edit-test-female-min').val(selectedOption.attr('data-female-min') || '');
+              $('#edit-test-female-max').val(selectedOption.attr('data-female-max') || '');
+              $('#edit-test-bio-ref').val(selectedOption.attr('data-bio-ref') || '');
               $('#modal-edit-test').modal('show');
           });
 
@@ -1929,11 +2166,24 @@
                   success: function(response) {
                       if(response.success) {
                           let t = response.test;
-                          let newOption = `<option value="${t.name}" data-id="${t.id}" data-price="${t.price}">${t.name}</option>`;
+                          let p = t.parameter || {};
+                          let newOption = `<option value="${t.name}" 
+                              data-id="${t.id}" 
+                              data-price="${t.price}" 
+                              data-unit="${p.unit || ''}" 
+                              data-is-immuno="${p.is_immunoassay || '0'}" 
+                              data-critical-low="${p.critical_low || ''}" 
+                              data-critical-high="${p.critical_high || ''}" 
+                              data-male-ref="${p.male_reference || ''}" 
+                              data-male-min="${p.male_min || ''}" 
+                              data-male-max="${p.male_max || ''}" 
+                              data-female-ref="${p.female_reference || ''}" 
+                              data-female-min="${p.female_min || ''}" 
+                              data-female-max="${p.female_max || ''}" 
+                              data-bio-ref="${p.biological_reference || ''}">${t.name}</option>`;
                           
                           // Update all test selects
                           $('.test-name-select').each(function() {
-                              // Insert before the Custom option
                               $(this).find('option[value="__custom__"]').before(newOption);
                           });
 
@@ -1948,7 +2198,7 @@
                       alert('Error saving test.');
                   },
                   complete: function() {
-                      btn.html('<i class="fa fa-check"></i> Save Test').prop('disabled', false);
+                      btn.html('<i class="fa fa-check"></i> Save Test & Parameters').prop('disabled', false);
                   }
               });
           });
@@ -1972,6 +2222,7 @@
                   success: function(response) {
                       if(response.success) {
                           let t = response.test;
+                          let p = t.parameter || {};
                           
                           // Update all test selects where this test was an option
                           $('.test-name-select').each(function() {
@@ -1979,8 +2230,18 @@
                               if (opt.length) {
                                   opt.val(t.name);
                                   opt.text(t.name);
-                                  opt.data('price', t.price);
                                   opt.attr('data-price', t.price);
+                                  opt.attr('data-unit', p.unit || '');
+                                  opt.attr('data-is-immuno', p.is_immunoassay || '0');
+                                  opt.attr('data-critical-low', p.critical_low || '');
+                                  opt.attr('data-critical-high', p.critical_high || '');
+                                  opt.attr('data-male-ref', p.male_reference || '');
+                                  opt.attr('data-male-min', p.male_min || '');
+                                  opt.attr('data-male-max', p.male_max || '');
+                                  opt.attr('data-female-ref', p.female_reference || '');
+                                  opt.attr('data-female-min', p.female_min || '');
+                                  opt.attr('data-female-max', p.female_max || '');
+                                  opt.attr('data-bio-ref', p.biological_reference || '');
                               }
                           });
 

@@ -289,13 +289,14 @@ class HomeController extends Controller
     public function patients()
     {
         $patients = \App\Models\Patient::with('appointments')->latest()->get();
-        $labTests = \App\Models\LabTest::orderBy('name')->get();
+        $labTests = \App\Models\LabTest::with('parameter')->orderBy('name')->get();
+        $units = \App\Models\Unit::orderBy('name')->get();
         
         $latest = \App\Models\Patient::latest('id')->first();
         $nextId = ($latest ? $latest->id : 0) + 1;
         $nextPatientId = date('Y') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
         
-        return view('patients', compact('patients', 'labTests', 'nextPatientId'));
+        return view('patients', compact('patients', 'labTests', 'units', 'nextPatientId'));
     }
 
     /**
@@ -400,30 +401,6 @@ class HomeController extends Controller
                 return date('Y') . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
             });
         }
-
-        // Calculate totals from input test arrays
-        $testNames = $request->input('test_name', []);
-        $testPrices = $request->input('test_price', []);
-        $testDiscounts = $request->input('test_discount', []);
-
-        $totalAmount = 0;
-        $totalDiscount = 0;
-
-        foreach ($testNames as $index => $name) {
-            if (!empty($name)) {
-                $price = floatval($testPrices[$index] ?? 0);
-                $discount = floatval($testDiscounts[$index] ?? 0);
-                $totalAmount += $price;
-                $totalDiscount += $discount;
-            }
-        }
-
-        $advancePaid = floatval($request->input('advance_paid', 0));
-
-        $validated['total_amount'] = $totalAmount;
-        $validated['discount'] = $totalDiscount;
-        $validated['advance_paid'] = $advancePaid;
-        $validated['balance'] = $totalAmount - $totalDiscount - $advancePaid;
 
         $patient = \App\Models\Patient::create($validated);
 
@@ -956,6 +933,16 @@ class HomeController extends Controller
 
         $test = \App\Models\LabTest::create($validated);
 
+        if ($request->filled('unit') || $request->filled('biological_reference') || $request->filled('male_reference') || $request->filled('female_reference')) {
+            $paramData = $request->only([
+                'unit', 'male_reference', 'female_reference',
+                'male_min', 'male_max', 'female_min', 'female_max',
+                'critical_low', 'critical_high', 'biological_reference', 'is_immunoassay'
+            ]);
+            $paramData['lab_test_id'] = $test->id;
+            \App\Models\TestParameter::create($paramData);
+        }
+
         return response()->json(['success' => 'Laboratory test registered successfully!', 'test' => $test]);
     }
 
@@ -997,6 +984,18 @@ class HomeController extends Controller
         ]);
 
         $test->update($validated);
+
+        if ($request->filled('unit') || $request->filled('biological_reference') || $request->filled('male_reference') || $request->filled('female_reference')) {
+            $paramData = $request->only([
+                'unit', 'male_reference', 'female_reference',
+                'male_min', 'male_max', 'female_min', 'female_max',
+                'critical_low', 'critical_high', 'biological_reference', 'is_immunoassay'
+            ]);
+            \App\Models\TestParameter::updateOrCreate(
+                ['lab_test_id' => $test->id],
+                $paramData
+            );
+        }
 
         return response()->json(['success' => 'Laboratory test updated successfully!', 'test' => $test]);
     }
