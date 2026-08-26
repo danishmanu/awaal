@@ -322,6 +322,13 @@
       let advance = parseFloat($(`#${context}-advance`).val()) || 0;
       let balance = total - discount - advance;
       $(`#${context}-balance`).text(balance.toFixed(2));
+
+      let statusSelect = context === 'add' ? $('#field_1100') : $('#edit-status');
+      if (Math.abs(balance) > 0.001) {
+        statusSelect.val('Partial');
+      } else if (total > 0) {
+        statusSelect.val('Paid');
+      }
     }
 
     $('.calc-input').on('input', function() { calculateBalance('add'); });

@@ -321,7 +321,7 @@ class HomeController extends Controller
             'discount'       => 'nullable|numeric|min:0',
             'advance_paid'   => 'nullable|numeric|min:0',
             'payment_status' => 'required|in:Paid,Partial,Unpaid,Refunded',
-            'payment_method' => 'required|in:Cash,Card,Bank Transfer,Online,Other',
+            'payment_method' => 'required|in:Cash,UPI,Card,Net Banking,Bank Transfer,Online,Other',
             'bill_date'      => 'required|date',
             'remarks'        => 'nullable|string|max:500',
         ]);
@@ -352,7 +352,7 @@ class HomeController extends Controller
             'discount'       => 'nullable|numeric|min:0',
             'advance_paid'   => 'nullable|numeric|min:0',
             'payment_status' => 'required|in:Paid,Partial,Unpaid,Refunded',
-            'payment_method' => 'required|in:Cash,Card,Bank Transfer,Online,Other',
+            'payment_method' => 'required|in:Cash,UPI,Card,Net Banking,Bank Transfer,Online,Other',
             'bill_date'      => 'required|date',
             'remarks'        => 'nullable|string|max:500',
         ]);

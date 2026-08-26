@@ -10,9 +10,9 @@
             <div style="font-size:13px;font-weight:400;color:var(--text-muted);margin-top:2px;">Manage test appointments</div>
         </div>
     </div>
-    <button type="button" class="btn-aw-primary" data-bs-toggle="modal" data-bs-target="#modal-add-booking">
-        <i class="fa fa-plus"></i> Book New Test
-    </button>
+    <a href="{{ route('patients') }}?action=add" class="btn-aw-primary">
+        <i class="fa fa-user-plus"></i> Register Patient &amp; Book Test
+    </a>
 </div>
 <style>
 

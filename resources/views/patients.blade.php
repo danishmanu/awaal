@@ -961,85 +961,7 @@
 	  </div>
   </div>
 
-  <!-- Quick Book Test Modal -->
-  <div class="modal center-modal fade" id="modal-patient-book-test" tabindex="-1" aria-hidden="true">
-	  <div class="modal-dialog">
-		<div class="modal-content">
-		  <div class="modal-header">
-			<h5 class="modal-title">Book Lab Test for <span id="book-test-patient-name" class="text-primary ms-1"></span></h5>
-			<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-		  </div>
-		  <div class="modal-body">
-			<form id="form-quick-book">
-				<input type="hidden" name="patient_id" id="quick-book-patient-id">
-				<div class="form-group">
-					<label for="quick-book-test-name" class="form-label">Test Name</label>
-					<select class="form-select" name="test_name" id="quick-book-test-name" required autocomplete="off">
-						<option value="">-- Select Test --</option>
-						@foreach($labTests as $test)
-							<option value="{{ $test->name }}" data-price="{{ $test->price }}">{{ $test->name }}</option>
-						@endforeach
-					</select>
-				</div>
-				<div class="row">
-					<div class="col-md-6 col-12">
-						<div class="form-group">
-							<label for="quick-book-price" class="form-label">Price (₹)</label>
-							<input type="number" step="0.01" class="form-control" name="test_price" id="quick-book-price" required autocomplete="off">
-						</div>
-					</div>
-					<div class="col-md-6 col-12">
-						<div class="form-group">
-							<label for="quick-book-discount" class="form-label text-danger">Discount (₹)</label>
-							<input type="number" step="0.01" class="form-control" name="test_discount" id="quick-book-discount" value="0.00" autocomplete="off">
-						</div>
-					</div>
-				</div>
-				<div class="row">
-					<div class="col-md-6 col-12">
-						<div class="form-group">
-							<label for="quick-book-advance" class="form-label">Advance Paid (₹)</label>
-							<input type="number" step="0.01" class="form-control" name="advance_paid" id="quick-book-advance" value="0.00" autocomplete="off">
-						</div>
-					</div>
-					<div class="col-md-6 col-12">
-						<div class="form-group">
-							<label for="quick-book-balance" class="form-label">Balance Due (₹)</label>
-							<input type="number" step="0.01" class="form-control" name="balance" id="quick-book-balance" value="0.00" readonly autocomplete="off">
-						</div>
-					</div>
-				</div>
 
-				<div class="text-end mb-2 pe-3">
-					<span style="font-size:16px; font-weight:700; color:var(--text-dark);">Net Payable: ₹<span id="quick-book-net-payable">0.00</span></span>
-				</div>
-				<div class="row">
-					<div class="col-6">
-						<div class="form-group">
-							<label for="field_1061" class="form-label">Date</label>
-							<input type="date" class="form-control" name="appointment_date" value="{{ date('Y-m-d') }}" required autocomplete="off" id="field_1061">
-						</div>
-					</div>
-					<div class="col-6">
-						<div class="form-group">
-							<label for="field_1062" class="form-label">Status</label>
-							<select class="form-select" name="status" autocomplete="off" id="field_1062">
-								<option value="Scheduled">Scheduled</option>
-								<option value="Pending">Pending</option>
-								<option value="Completed">Completed</option>
-							</select>
-						</div>
-					</div>
-				</div>
-			</form>
-		  </div>
-		  <div class="modal-footer">
-			<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-			<button type="button" class="btn btn-primary" id="btn-quick-book-save">Confirm Booking</button>
-		  </div>
-		</div>
-	  </div>
-  </div>
 
   <!-- Add Doctor Modal -->
   <div class="modal fade modal-aw" id="modal-add-doctor" tabindex="-1" style="z-index: 1060;" aria-hidden="true">
@@ -1200,11 +1122,13 @@
               }
           }
 
-          $(document).on('shown.bs.modal', '#modal-add-patient, #modal-edit-patient, #modal-patient-book-test', function() {
-              initDynamicSelect2();
-          });
-
           initDynamicSelect2();
+
+          // Auto-open Add New Patient & Test modal if action=add is in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('action') === 'add') {
+              $('#modal-add-patient').modal('show');
+          }
 
 		  // Initialize DataTables for Patients with custom search wrapper
 		  var patientTable = $('#patient-table').DataTable({
@@ -1532,44 +1456,7 @@
 			  });
 		  });
 
-		  // Book Appointment Quick Feature
-		  $(document).on('click', '.btn-book-appointment', function() {
-			  $('#quick-book-patient-id').val($(this).data('id'));
-			  $('#book-test-patient-name').text($(this).data('name'));
-			  $('#form-quick-book')[0].reset();
-			  $('#quick-book-net-payable').text('0.00');
-		  });
 
-		  $('#quick-book-test-name').change(function() {
-			  let price = $(this).find(':selected').data('price');
-			  $('#quick-book-price').val(price ? parseFloat(price).toFixed(2) : '');
-			  calculateQuickBookNet();
-		  });
-
-		  $('#quick-book-price, #quick-book-discount, #quick-book-advance').on('input', calculateQuickBookNet);
-
-		  function calculateQuickBookNet() {
-			  let price = parseFloat($('#quick-book-price').val()) || 0;
-			  let discount = parseFloat($('#quick-book-discount').val()) || 0;
-			  let advance = parseFloat($('#quick-book-advance').val()) || 0;
-			  let net = price - discount;
-			  if (net < 0) net = 0;
-			  let balance = net - advance;
-			  $('#quick-book-net-payable').text(net.toFixed(2));
-			  $('#quick-book-balance').val(balance.toFixed(2));
-		  }
-
-		  $('#btn-quick-book-save').click(function() {
-			  let btn = $(this);
-			  btn.html('<i class="fa fa-spinner fa-spin me-2"></i> Booking...').addClass('disabled');
-			  $.post("{{ route('appointments.store') }}", $('#form-quick-book').serialize(), function(response) {
-				  alert(response.success);
-				  location.reload();
-			  }).fail(function() {
-				  alert("Error booking test.");
-				  btn.html('Confirm Booking').removeClass('disabled');
-			  });
-		  });
 
 		  // View Patient
 		  $(document).on('click', '.btn-view', function() {
